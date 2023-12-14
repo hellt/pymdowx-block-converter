@@ -17,7 +17,7 @@ def update_admonition():
             type_ = match.group("type")
             title = match.group("title")
             block = match.group("content")
-            deindented_block = block.replace("    ", "")
+            deindented_block = re.sub(r"^ {4}", "", block, flags=re.MULTILINE)
             result = f"/// {type_}"
             if title:
                 result += f" | {title}"
@@ -52,6 +52,29 @@ def update_details():
         md_file.write_text(new_content)
 
 
+def update_tabs():
+    md_files = list(Path("/docs").glob("**/*.md"))
+    # https://regex101.com/r/8CWkrH/1
+    re_str = r"===\s?\"(?P<title>.+)\"\n(?P<content>(\n|    .*)*)\n*"
+    for md_file in md_files:
+        content = md_file.read_text()
+
+        def replace(match: re.Match):
+            title = match.group("title")
+            block = match.group("content")
+            deindented_block = re.sub(r"^ {4}", "", block, flags=re.MULTILINE)
+            result = "/// tab"
+            if title:
+                result += f" | {title}"
+            result += f"\n{deindented_block.strip()}\n"
+            result += "///\n\n"
+            return result
+
+        new_content = re.sub(re_str, replace, content)
+        md_file.write_text(new_content)
+
+
 if __name__ == "__main__":
     update_admonition()
     update_details()
+    update_tabs()
